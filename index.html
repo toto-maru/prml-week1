@@ -1,40 +1,934 @@
 <!doctype html>
 <html>
-	<head>
-		<meta charset="utf-8">
-		<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 
-		<title>reveal.js</title>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 
-		<link rel="stylesheet" href="dist/reset.css">
-		<link rel="stylesheet" href="dist/reveal.css">
-		<link rel="stylesheet" href="dist/theme/black.css" id="theme">
+    <title>reveal.js</title>
 
-		<!-- Theme used for syntax highlighted code -->
-		<link rel="stylesheet" href="plugin/highlight/monokai.css" id="highlight-theme">
-	</head>
-	<body>
-		<div class="reveal">
-			<div class="slides">
-				<section>Slide 1</section>
-				<section>Slide 2</section>
-			</div>
-		</div>
+    <link rel="stylesheet" href="dist/reset.css">
+    <link rel="stylesheet" href="dist/reveal.css">
+    <link rel="stylesheet" href="dist/theme/white.css" id="theme">
 
-		<script src="dist/reveal.js"></script>
-		<script src="plugin/notes/notes.js"></script>
-		<script src="plugin/markdown/markdown.js"></script>
-		<script src="plugin/highlight/highlight.js"></script>
-		<script>
-			// More info about initialization & config:
-			// - https://revealjs.com/initialization/
-			// - https://revealjs.com/config/
-			Reveal.initialize({
-				hash: true,
+    <!-- Theme used for syntax highlighted code -->
+    <link rel="stylesheet" href="plugin/highlight/monokai.css" id="highlight-theme">
+    <style type="text/css">
+        <!--
+        section {
+            text-align: left;
+            font-size: 0.5em;
+        }
 
-				// Learn about plugins: https://revealjs.com/plugins/
-				plugins: [ RevealMarkdown, RevealHighlight, RevealNotes ]
-			});
-		</script>
-	</body>
+        h4 {
+            text-decoration: underline;
+        }
+
+        .reveal .slides {
+            bottom: auto;
+        }
+
+        .graph-title {
+            text-align: center;
+            font-size: 0.8em;
+        }
+
+        .text-right {
+            text-align: right;
+        }
+
+        .underline {
+            text-decoration: underline;
+        }
+        -->
+    </style>
+</head>
+
+<body>
+    <div class="reveal">
+        <div class="slides">
+            <section class="title">
+                <h2>パターン認識と機械学習</h2>
+                <br>
+                <br>
+                <p>2020.06.16</p>
+                <p>金子 陽介</p>
+            </section>
+            <section>
+                <h2>参考資料</h2>
+                <ul>
+                    <li><a href="http://nineties.github.io/prml-seminar/#/">2014年 パターン認識・機械学習勉強会 資料</a></li>
+                    <ul>
+                        <li>(<a href="https://www.youtube.com/watch?v=yRO3qUsfvt0&list=PLl1oX4Yc8CJaeKmvcKYwJMuLT8dcWzGVo">動画</a>)</li>
+                    </ul>
+                    <li><a href="http://nineties.github.io/math-seminar/">2013年 プログラマの為の数学勉強会</a></li>
+                    <ul>
+                        <li>(<a href="https://www.youtube.com/playlist?list=PLzJWjr7AvxH0YYpi2uAH_QHLaSJQ5fZrR">動画</a>)</li>
+                    </ul>
+                    <li><a href="https://www.amazon.co.jp/%E6%A9%9F%E6%A2%B0%E5%AD%A6%E7%BF%92%E3%82%B9%E3%82%BF%E3%83%BC%E3%83%88%E3%82%A2%E3%83%83%E3%83%97%E3%82%B7%E3%83%AA%E3%83%BC%E3%82%BA-%E3%83%99%E3%82%A4%E3%82%BA%E6%8E%A8%E8%AB%96%E3%81%AB%E3%82%88%E3%82%8B%E6%A9%9F%E6%A2%B0%E5%AD%A6%E7%BF%92%E5%85%A5%E9%96%80-KS%E6%83%85%E5%A0%B1%E7%A7%91%E5%AD%A6%E5%B0%82%E9%96%80%E6%9B%B8-%E9%A0%88%E5%B1%B1-%E6%95%A6%E5%BF%97/dp/4061538322/ref=tmm_pap_swatch_0?_encoding=UTF8&qid=1592001164&sr=8-1">機械学習スタートアップシリーズ　ベイズ推論による機械学習入門</a></li>
+                </ul>
+            </section>
+            <section>
+                <h2>イントロダクション</h2>
+                <p>機械学習の用語説明がされていますが、特に難しいことはないのでざっと流します。</p>
+                <h3>機械学習の流れ</h3>
+                <p>
+                    例えば手書き数字の認識を考えます。各画像が28 x 28ピクセルだとすると、１枚の画像は784次元の画像として表現できます。ここではこの784次元の画像を表すベクトル$\mathbf{x}$が$0,\cdots,9$のどの数字を表しているかを出力するプログラムを考えるとします。
+                </p>
+                <p>
+                    仮に人が考えて識別のためのルールやヒューリスティクスを編みだすことを考えると、そのようなアプローチはすぐにルール数が発散し、またルールの例外も発散してまいます。
+                </p>
+                <p>
+                    一方機械学習によるアプローチではまず<strong>訓練集合(training set)</strong>とよぶN個の手書き数字の集合を使ってモデルのパラメーターを適応適的に調整します。但し、事前に訓練集合の1つ1つのデータに対応するカテゴリは<strong>目標ベクトル(target vecotr)</strong>を使って表現しておきます。<br>
+                    このような機械学習によって関数$y(\mathbf{x})$が得られます。
+                </p>
+                <p>
+                    関数$y(\mathbf{x})$の具体的なパラメーターは<strong>訓練(training)</strong>段階または<strong>学習(learning)</strong>段階によってきめられます。<br>
+                    そして一旦モデルの学習が終了したら、<strong>テスト集合(test set)</strong>と呼ばれる新たな画像に対してその画像のカテゴリを予測できるようになります。
+                </p>
+                <p>
+                    訓練には使用していない新しいデータを分類する能力を<strong>汎化(generalization)</strong>と呼びます。実際の応用の場面では、入力ベクトルの多様性が大きいので、汎化はパターン認識の中心的な課題となります。
+                </p>
+                <p>
+                    実際の応用では、モデルへの入力変数には<strong>前処理(preprocessing)</strong>によって、新しい変数に変換し、問題をより解きやすくしておきます。この前処理の段階は<strong>特徴抽出(feature extraction)</strong>とも呼ばれます。
+                </p>
+            </section>
+            <section>
+                <h2>イントロダクション</h2>
+                <h3>機械学習の分類</h3>
+                <h4>教師あり学習</h4>
+                <p>
+                    訓練データが入力ベクトルとそれに対応する目標ベクトルの事例で構成される問題は<strong>教師あり学習(supervised learning)</strong>と呼ばれます。<br>
+                    教師あり学習の中で、数字認識の例のように、各入力ベクトルを有限この離散カテゴリに割り当てる場合を<strong>クラス分類(classification)</strong>問題と呼びます。
+                </p>
+                <p>
+                    求める出力が離散変数では なく、連続変数の場合を<strong>回帰(regression)</strong>と呼びます。<br>
+                </p>
+                <h4>教師なし学習</h4>
+                <p>
+                    訓練データが入力ベクトル$\mathbf{x}$のみで、対応する目標値が存在しないパターン認識の問題を<strong>教師なし学習(unsupervised learning)</strong>問題と呼びます。<br>
+                    この中には、類似した事例のグループを見つける<strong>クラスタリング(clustering)</strong>や、データの分布を求める<strong>密度推定(density estimation)</strong>などがあります。
+                </p>
+                <h4>強化学習</h4>
+                <p>
+                    ある与えられた状況下で、報酬を最大にするような適当な行動を見つける問題を<strong>強化学習(reinforcement learning)</strong>と呼びます。<br>
+                    PRMLでは強化学習については扱いません。
+                </p>
+            </section>
+            <section>
+                <h2>1.1 多項式フィッティング</h2>
+                <p>
+                    1章では全体を単純な回帰問題を通してパターン認識に共通する基本的な考え方を見ていきます。
+                </p>
+                <p class="graph-title">データ(青丸)とその生成のもととなった関数(緑線)</p>
+                <div class="r-stack">
+                    <img alt="" src="../imgs/figure_1.2.png" width="40%" />
+                </div>
+                <p>
+                    データは$\sin(2\pi x)$にランダムなノイズを加えて生成したものです。<br>
+                    ここでは、$N$個の観測値$x$を並べた$\mathbf{X} = (x_1,\cdots,x_N)^T$と、それぞれに対応する観測値$t$を並べた$\mathbf{t} = (t_1,\cdots,t_N)^T$だけが与えられるものとします。<br>
+                    (データの生成に$\sin (2\pi x)$が使われていることはわからないとします)
+                </p>
+                <p>
+                    まずは簡単に、以下のような多項式でデータへのフィッティングを行うことにします。
+                </p>
+                \[
+                y(x,\mathbf{w}) = w_0 + w_ix + w_2x^2 + \cdots + w_Mx^M = \sum_{j=0}^{M}w_jx^j
+                \]
+                <p>
+                    このモデルは<strong>線形モデル(linear model)</strong>とよばれます。（3章と4章で詳しく解説されます）<br>
+                </p>
+            </section>
+            <section>
+                <h2>1.1 多項式フィッティング</h2>
+                \[
+                y(x,\mathbf{w}) = w_0 + w_ix + w_2x^2 + \cdots + w_Mx^M = \sum_{j=0}^{M}w_jx^j
+                \]
+                <p>
+                    少しだけ線形モデルについて補足します。<br>
+                    一般に、
+                </p>
+                \[\begin{aligned}
+                \mathbf{w} &amp; = [w_0, w_1, w_2, \cdots,w_M]^T \\
+                \Psi(\mathbf(x)) &amp; = [1, x, x^2, \cdots, x^M ]
+                \end{aligned}\]
+                を用いて
+                \[
+                y(x,\mathbf{w}) = \mathbf{w}^T \Psi(\mathbf{x})
+                \]
+                <p>
+                    と表されるモデルを<strong>一般化線形モデル(generalized linear model)</strong>と呼びます。
+                    また、ベクトル値関数$\Psi(\mathbf{x})$の書く要素$\Psi_i(\mathbf{x})$を基底関数と呼びます。<br>
+                    上記の多項式モデルでは、
+                </p>
+                \[
+                \Psi_i(x) = x^i
+                \]
+                <p>
+                    とおいたものです。<br>
+                    $\Psi(\mathbf{X})$は線形関数では有りませんが、パラメータ$\mathbf{w}$については線形です。
+                    つまり、
+                </p>
+                \[\begin{aligned}
+                y(x, \mathbf{w}_1 + \mathbf{w}_2) &amp; = (\mathbf{w}_1 + \mathbf{w}_2)^T \Psi(\mathbf{x}) \\
+                &amp; = \mathbf{w}_1^T \Psi(\mathbf{x}) + \mathbf{w}_2^T \Psi(\mathbf{x}) \\
+                y(x, a\mathbf{w}) &amp; = a(\mathbf{w}\Psi(\mathbf{x}))
+                \end{aligned}\]
+                <p>
+                    が成り立ちます。
+                </p>
+                <p>
+                    一般に線形性を持つ写像（線形写像）とは、
+                </p>
+                \[
+                f(ax\ +\ by) = af(x) + bf(y)
+                \]
+                <p>
+                    の性質を満たす写像$f$のことを言います。<a href="http://nineties.github.io/math-seminar/9.html#/35">参考</a>
+                </p>
+            </section>
+            <section>
+                <h2>1.1 多項式フィッティング</h2>
+                <p>
+                    再び先程の多項式フィッティングに話を戻します。
+                </p>
+                <div class="r-stack">
+                    <img alt="" src="../imgs/figure_1.2.png" width="40%" />
+                </div>
+                \[
+                y(x,\mathbf{w}) = w_0 + w_ix + w_2x^2 + \cdots + w_Mx^M = \sum_{j=0}^{M}w_jx^j
+                \]
+                <p>
+                    多項式モデルには図の緑線に近い出力を出すように学習することを期待しています。<br>
+                    まずは、図の青丸のデータを、上記の多項式に当てはめることを考えます。
+                </p>
+                <p>
+                    そのために関数$y(x,\mathbf{w})$とデータ(青丸)のずれを図る<strong>誤差関数(error function)</strong>を最小化します。<br>
+                    ここでは誤差関数に二乗和誤差(sum-of-squares error)を選びます。
+                </p>
+                \[
+                E(\mathbf{w}) = \frac{1}{2}\sum_{n=1}^{N}\{y(x_n,\mathbf{w})-t_n\}^2
+                \]
+                <p>
+                    $E(\mathbf{w})$は$\mathbf{w}$に関する2次関数なので、誤差関数$E(\mathbf{w})$を最小にする$\mathbf{w}^*$は一意に決まります。
+                </p>
+            </section>
+            <section>
+                <h2>1.1 多項式フィッティング</h2>
+                <p>
+                    データとモデルによる推定の誤差関数$E(\mathbf{w})$を最小にする$\mathbf{w}$を見つけられることはわかりましたが、モデルの次数Mはどう選べば良いでしょうか。<br>
+                    この問題は<strong>モデル比較(model comparison)</strong>や<strong>モデル選択(model selection)</strong>と呼ばれます。<br>
+                    試しにいくつかのMについて、誤差関数$E(\mathbf{w})$を最小にする$\mathbf{w}$を求めた結果を見てみます。
+                    <div class="r-stack">
+                        <img src="../imgs/figure_1.4.png"/>
+                    </div>_
+                    <p>
+                        M＝９の時、モデルはデータ上を通過しているので、$E(\mathbf{w}^*)=0$になっています。<br>
+                        しかし、与えられたデータ(青丸)以外の$x$については、期待していた緑線から大きくずれてしまっています。(このような振る舞いを<strong>過学習(over-fitting)</strong>と呼びます)
+                    </p>
+                    <p>
+                        改めてモデルを学習する目的を思い出すと、それは「未知のデータに対してできるだけ正確な予測を出すこと」でした。<br>
+                        そのため、今度は訓練データだけでなく、訓練では使用しない未知のデータに対しても誤差関数による誤差（残差）を計算し、モデルを評価します。
+                    </p>
+                </p>
+            </section>
+            <section>
+                <h2>1.1 多項式フィッティング</h2>
+                <p>
+                    訓練データと未知のデータに対して誤差関数を用いて誤差を計算する場合、これまで使っていた
+                </p>
+                \[
+                E(\mathbf{w}) = \frac{1}{2}\sum_{n=1}^{N}\{y(x_n,\mathbf{w})-t_n\}^2
+                \]
+                <p>
+                    の誤差関数では、データの数が異なる場合、誤差の値を比較できないため不便です。<br>
+                    そこで以下のうようにデータ数$N$で除算した
+                </p>
+                \[
+                E_{RMS} = \sqrt{\frac{2E(\mathbf{w}^*)}{N}}
+                \]
+                <p>
+                    で定義される、平均二乗平方根誤差(root-mean-square error, RMS error)を使用します。
+                    この$E_{RMS}$を訓練データと新たに生成した未知のデータについて計算すると、以下のような結果になります。
+                </p>
+                <div class="r-stack">
+                    <img alt="" src="../imgs/figure_1.5.png" width="40%" />
+                </div>
+                <p>
+                    M=9の時、誤差が0になっている一方、未知のデータに対する誤差(残差)は他のMの結果よりも大きくなっていることがわかります。
+                </p>
+            </section>
+            <section>
+                <h2>1.1 多項式フィッティング</h2>
+                <p>
+                    誤差と残差を見ることで、適切なモデルの次数を検討できることをみました。<br>
+                    ここではモデルの次数Mは変えずに、訓練データの数を増加させた場合にモデルの学習結果がどのように変化するかを見てみます。
+                </p>
+                <div class="r-stack">
+                    <img alt="" src="../imgs/figure_1.7.png"/>
+                </div>
+                <p>
+                    この結果から、データの数が増えるほど、過学習がそれほど問題ではなくなることがわかります。<br>
+                    別の言い方をすると、データ数が多ければより次数Mの大きい複雑なモデルを選択できることになります。
+                </p>
+                <p>
+                    しかしどれだけ複雑なモデルを選ぶかは、「取得できるデータの数」ではなく、「解くべき問題の複雑さ」によって決める方が合理的に思えます。
+                </p>
+                <p>
+                    実際、過学習の問題を避けながら<strong>有効パラメータ数(effective number of parameters)</strong>を決めるには、3章で説明される<strong>ベイズ的(Baysian)</strong>アプローチを採用する必要があります。
+                </p>
+            </section>
+            <section>
+                <h2>1.1 多項式フィッティング</h2>
+                <h4>正則化</h4>
+                <p>
+                    ここではベイズ的アプローチではなく、一般的なテクニックである<strong>正則化(regularization)</strong>で、過学習を抑制できることを見てみます。
+                </p>
+                <p>
+                    正則化は、誤差関数に罰金(penalty)項を追加することで、モデルの係数$\mathbf{w}$が大きくなるのを防ごうとするものです。<br>
+                    ここでは単純な正則化項として係数の二乗和をとったものを正則化項とします。
+                </p>
+                \[
+                \bar{E}(\mathbf{w}) = \frac{1}{2}\sum_{n=1}^{N}\{y(x,\mathbf{w})-t_n\}^2 + \frac{\lambda}{2}\|\mathbf{w}\|^2 \\
+                ここで \\
+                \|w\|^2 = \mathbf{w}^T\mathbf{w} = w_0^2 + w_1^2 + \cdots + w_M^2
+                \]
+                <p>
+                    $\lambda$は正則化項と二乗誤差の和の項との相対的な重要度を調整しています。<br>
+                    これまでみた誤差関数と同様に、正則化項を追加した誤差関数も、$\mathbf{w}$の二乗関数なので、この誤差関数を最小にする$\mathbf{w}^*$は一意に定まります。
+                </p>
+                <p>
+                    今回のように2次の正則化項を用いる場合を<strong>リッジ回帰(ridge regression)</strong>と呼び、ニューラルネットワークの文脈では<strong>荷重減衰(weight decay)</strong>と呼びます。
+                </p>
+                <div class="r-stack">
+                    <img alt="" src="../imgs/figure_1.8.png" width="100%" />
+                </div>
+                <p>
+                    上記結果から適切に入を調整した正則化項を入れることで過学習を抑制できていることがわかります。
+                </p>
+            </section>
+            <section>
+                <h2>1.1 多項式フィッティング まとめ</h2>
+                <p>
+                    1.1では$\sin(2\pi x)$にノイズを加えて生成されたデータを多項式でフィッティングすることを例に見てきました。
+                </p>
+                <p>
+                    まずモデルをデータに当てはめるために、二乗和誤差関数を導入しました。
+                </p>
+                <p>
+                    しかし二乗和誤差関数だけでは、過学習をおこしてしまうため、テクニックとして正則化項を導入した誤差関数を導入しました。
+                </p>
+                <p>
+                    これ以降は、多項式モデルにベイズ的視点を入れることで、天下り的に導入してきた二乗和誤差や正則化項が自然に導入されることを見ていきます。
+                </p>
+                <p>
+                    ベイズ的視点を導入する前に、確率論や基本的であるガウス分布などを導入します。
+                </p>
+            </section>
+            <section>
+                <h2>1.2 確率論</h2>
+                <p>
+                    確率論の基本的な定理を導入します。
+                </p>
+                <h4>同時確率</h4>
+                <p>
+                    $X=x_i$という事象と$Y=y_j$という事象が同時に起こる確率を<strong>同時確率(joint probability)</strong>と呼び
+                </p>
+                \[
+                p(X=x_i,Y=y_i)
+                \]
+                <p>
+                    と書きます。
+                </p>
+                <h4>加法定理</h4>
+                <p>
+                    同時確率$p(X,Y)$を事象$Y$について足し上げることで、確率$p(X)$をもとめることができます。<br>
+                    これを<strong>加法定理(sum rule)</strong>と言い、この足し上げる操作を周辺化、足し上げた確率を<strong>周辺確率(marginal probability)</strong>と呼びます。
+                </p>
+                \[
+                p(X=x_i) = \sum_{j=1}^{L}(X=x_i, Y=y_j)
+                \]
+                <h4>条件付き確率</h4>
+                <p>
+                    ある与えられた$X=x_i$の中において、$Y=y_j$が発生する確率を、<br>
+                    と書き、X=x_iが与えられた下でのY=y_jの<strong>条件付き確率(conditional probability)</strong>と呼び、
+                </p>
+                \[
+                p(Y=y_j | X=x_i) = \frac{p(X=x_i, Y=y_i)}{p(X=x_i)}
+                \]
+                <p>
+                    と定義されます。
+                </p>
+                <h4>乗法定理</h4>
+                <p>
+                    条件付き確率の式を変形して、同時確率$p(X=x_i, Y=y_i)$が以下のような積で表されることを
+                </p>
+                \[
+                p(X=x_i, Y=y_i) = p(Y=y_i|X=x_i)p(X=x_i)
+                \]
+                <p>
+                    <strong>乗法定理(product rule)</strong>と言います。
+                </p>
+            </section>
+            <section>
+                <h2>1.2 確率論</h2>
+                <h4>ベイズの定理</h4>
+                <p>
+                    同時確率の対称性と、乗法定理から
+                </p>
+                \[
+                p(Y|X) = \frac{p(X|Y)p(Y)}{p(X)}
+                \]
+                <p>
+                    が導かれるが、これを<strong>ベイズの定理(Bayes' theorem)</strong>と言います。<br>
+                    ベイズの定理の分母は、加法定理を使って分子の量だけで表すことができて、
+                </p>
+                \[
+                p(X) = \sum p(X|Y)p(Y)
+                \]
+                <p>
+                    と表すことができます。
+                </p>
+                <p>
+                    ベイズの定理は純粋に数学的に導かれる定理ですが,主観的解釈と共に利用される事が多いです。<br>
+                    つまり,事象Aが生じたという情報を得た事による,事象Bが起きているという事の確信度$P(B)$の確信度$P(B|A)$への更新は
+
+                </p>
+                \[
+p(Y|X)=\frac{p(X|Y)}{p(X)} \times p(Y)
+                \]
+                <p>
+                    によって行われるという解釈です。
+                    この意味で、$p(Y)$を<strong>事前確率(prior probability)</strong>、$p(Y|X)$を<strong>事後確率(posterior probability)</strong>と呼びます。
+                </p>
+            </section>
+            <section>
+                <h2>1.2 確率論</h2>
+                <h4>ベイズの定理の解釈</h4>
+                <p>
+                    ベイズの定理
+                </p>
+                \[
+                p(Y|X)=\frac{p(X|Y)}{p(X)} \times p(Y)
+                \]
+                <p>
+                    の意味をもう少し考えてみます。
+                </p>
+                <p>
+                    $Y$であるという条件下で$X$が通常より起こり難いなら、<br>
+                    $p(X|Y) \lt p(X)$なので、$p(Y|X) \lt p(Y)$となります。<br>
+                    これは「$Y$という条件下では起こり難いはずの$X$が起こる」なら「$Y$であるという確信度が低下する」ということです。
+                </p>
+                <p>
+                    例えばあるAさんについて、<br>
+                </p>
+                \[\begin{aligned}
+                Y &amp; = Aさんが男性 \\
+                X &amp; = 髪が長い
+                \end{aligned}\]
+                <p>
+                    という事象だとすると、<br>
+                    全体の中で髪が長い人の比率$p(X)$よりも、髪が長い人の中で男性の比率$p(X|Y)$の方が小さいので、<br>
+                    髪が長いという事象を観測したことで、事前分布$p(Y)$は、$\frac{p(X|Y)}{p(X)}$によってより小さい値に更新された事後分布$p(Y|X)$に更新されるということです。
+                </p>
+                <p>
+                    上とは逆の$p(X|Y)\gt P(X)$の場合も同様の解釈を行う事が出来ます。
+
+                </p>
+
+            </section>
+            <section>
+                <h2>1.2.1確率密度</h2>
+                <h4>確率密度</h4>
+                <p>実数値を取る変数xが区間$(x,\ x+ \delta x)$に入る確率が、<br>$\delta x \rightarrow 0$のとき$p(x) \delta x$で与えられるとき、この$p(x)$を<strong>確率密度(probability density)</strong>と呼びます</p>
+                <p>この確率密度$p(x)$を用いて、$x$が区間$(a,b)$にある確率は</p>
+                \[
+                p(x \in (a,b)) = \int_a^b p(x) dx
+                \]
+                <p>また$p(x)$は以下の2つの条件を満たす必要があります</p>
+                \[
+                p(x) \geq 0 \\
+                \int_{- \infty}^\infty p(x) dx = 1 \\
+                \]
+                <p>変数変数xを、実数の数ベクトル$\mathbf{x}$の時も全く同様の定義が成り立ちます</p>
+                <p>また、変数$x$が連続変数ではなく離散変数のとき、$p(x)$は<strong>確率質量関数(probability mass function)</strong>と呼ばれることがあります。</p>
+            </section>
+            <section data-markdown>
+                <textarea data-template>
+## 1.2.2 期待値と分散
+#### 期待値
+ある関数`$f(x)$`の確率分布`$p(x)$`の下での平均値を`$f(x)$`の<strong>期待値(expectation)</strong>と呼び、`$E[f]$`と書きます
+離散分布の場合と、連続変数の場合それぞれにおいて、`$E[f]$`は以下のように定義されます
+- 離散分布の場合
+
+`\[
+E[f] = \sum p(x) f(x)
+\]`
+- 連続変数の場合
+
+`\[
+E[f] = \int p(x) f(x) dx
+\]`
+どちらの場合も、確率分布や確率密度から得られた有限個のN点を用いて以下のように近似値を計算することができます
+`\[
+E[f] = \frac{1}{N} \sum^N f(x_n)
+\]`
+#### 期待値計算の線形性
+期待値計算は線形写像のため以下の性質を持ちます
+`\[
+E[aX\ +\ aY] = aE[X] + bE[Y]
+\]`
+つまりXとYの和をとってから期待値を計算しても、XとYの期待値を計算してから足し合わせても同じ結果が得られます(積についても同様)
+            </textarea>
+            </section>
+            <section data-markdown>
+                <textarea data-template>
+## 1.2.2 期待値と分散
+#### 分散
+分散は以下の式で定義されます
+`\[
+var[f] = E[(f(x) - E[f(x)])^2]
+\]`
+期待値計算が線形操作であることを用いながら、この分散の式を展開していくと
+`\[\begin{aligned}
+var[f] &amp; = E[f(x)^2-2f(x)E[f(x)]+E[f(x)]^2]\\
+&amp; = E[f(x)^2] -2E[f(x)]E[f(x)]+E[f(x)]^2\\
+&amp; = E[f(x)^2] - E[f(x)]^2
+\end{aligned}\]`
+#### 共分散
+2つの確率変数`$x$`,`$y$`について共分散(covariance)は
+`\[\begin{aligned}
+cov[x,y] &amp; = E_{x,y}[{x-E[x]}{y-E[y]}]\\
+&amp; = E_{x,y}[xy] - E[x]E[y]
+\end{aligned}\]`
+と定義されます。
+x,yが独立ならば、
+`\[\begin{aligned}
+E_{x,y}[x,y] &amp;= \int\int xy\ p(x,y) dx dy\\
+&amp; = \int\int xy\ p(x)p(y)dxdy \\
+&amp; = \int x\ p(x)dx \int y\ p(y)dy\\
+&amp; = E[x]E[y]
+\end{aligned}\]`
+なので、`$E[x]E[y] = 0$`となります。
+x,yがベクトルの場合も同様に共分散が定義できます。
+
+            </textarea>
+            </section>
+            <section data-markdown>
+                <textarea data-template>
+## 1.2.3ベイズ確率
+1.1で挙げた多項式フィッティングについて、ベイズ的な見方を導入することを考えます。  
+モデルパラメーター`$\mathbf{w}$`についても不確実性を取り扱い、定量化していきます。
+まずは、データを観測する前にあらかじめ`$\mathbf{w}$`に関する仮設を事前分布`$p(\mathbf{w})$`の形で取り込んでおきます。  
+
+これにより、観測されたデータ`${\mathbf{D}=\{t_1,\cdots,t_N\}}$`も用いて
+`\[
+p(\mathbf{w} | \mathbf{D}) = \frac {p(\mathbf{D}|\mathbf{w})p(\mathbf{w})}{p(\mathbf {D})}
+\]`
+というように、`$p(\mathbf{w})$`の事後分布`$p(\mathbf{w}|\mathbf{D})$`を計算することができます。  
+右辺の`$p(\mathbf{D}|\mathbf{w})$`は**尤度関数（likelihood function）**と呼ばれ、パラメーターベクトル`$\mathbf{w}$`の関数とみなせます。
+
+尤度の定義から、ベイズの定義は言葉で書くと
+`\[
+事後確率 \propto 尤度 \times 事前確率
+\]`
+となります。
+            </textarea>
+            </section>
+            <section>
+                <h2>1.2.3 ベイズ確率</h2>
+                <h4>尤度の使い方</h4>
+                <p>
+                    ベイズと頻度主義の両方のパラダイムで尤度関数$p(\mathcal{D}|\mathbf{w})$は重要です。<br>
+                    しかし、それをどう使うかはそれぞれのアプローチで異なります。
+                </p>
+                <p>
+                    頻度主義的な考え方において、パラメーター$\mathbf{w}$は固定したパラーメーターで、その値を推定値として求めます。
+                </p>
+                <p>
+                    一方ベイズにおいては、パラメーター${\mathbf{w}}$は$\mathbf{w}$の事前分布$p(\mathbf{w})$を導入し、分布として扱われます。<br>
+                    尤度の最大化により固定の値をすいていするのではなく、データが与えられた後の事後分布を考え、その事後分布をの最大化することによって、$\mathbf{w}$の分布を更新していきます。
+                </p>
+                <p>
+                    ただしこの事前分布には注意が必要です。<br>
+                    事前分布の選び方に、事後分布の結果が依存していて、不適切な事前分布を選択してしまうと、得られる事後分布も不適切な結果になってしまいます。
+                </p>
+                <p>
+                    ここで挙げた尤度の使い方の違いは再度後で多項式フィッティングの話題に戻る時に見ていきます。
+                </p>
+            </section>
+            <section data-markdown>
+                <textarea data-template>
+## 1.2.4 ガウス分布
+#### ガウス分布の定義
+2章移行で様々な分布が導入されるますが、ここでは**正規分布(normal distribution)**または**ガウス分布(Gaussian distribution)**と呼ばれる分布を導入します。
+ガウス分布は以下で定義されます。
+`\[
+\mathcal{N}(x|\mu,\sigma^2) = \frac {1}{(2\pi \sigma^2)^\frac {1}{2}} \exp \{-\frac{1}{2\sigma^2}(x-\mu)^2\}
+\]`
+ガウス分布は、
+`\[\begin{aligned}
+\mu &amp; : 平均(mean) \\
+\sigma^2 &amp; : 分散(variance)
+\end{aligned}\]`
+のパラメーターを持ちます。  
+また、分散の平方根`$\sigma$`は**標準偏差(standard deviation)**、分散の逆数`$\beta = \frac{1}{\sigma^2}$`は**精度パラメーター(precision parameter)**と呼ばれます。
+            </textarea>
+            </section>
+            <section data-markdown>
+                <textarea data-template>
+## 1.2.4 ガウス分布
+#### ガウス分布の性質
+ガウス分布の定義から明らかに
+`\[
+\mathcal{N}(x|\mu,\sigma^2) \gt 0
+\]`
+であり、`$x \in (-\infty, \infty)$`についてガウス分布を積分すると、[ガウス積分の公式](https://mathtrain.jp/gaussa)をもちいて
+`\[
+\int_{-\infty}^{\infty} \mathcal{N}(x|\mu,\sigma^2) dx = 1
+\]`
+となるので、ガウス分布は規格化されていることがわかります。  
+ガウス分布の期待値は、
+`\[
+E[x] = \int_{-\infty}^{\infty}\mathcal{n}(x|\mu,\sigma^2)x dx= \mu
+\]`
+であり、`$\mu$`はこの分布下での平均値になるので、平均と呼ばれます。  
+ガウス分布の２次のモーメント(`$x^2$`の期待値)は、
+`\[
+E[x^2] = \int_{-\infty}^{\infty}\mathcal{n}(x|\mu,\sigma^2)x^2 dx= \mu^2 + \sigma^2
+\]`
+となります。  
+これらを用いてガウス分布の分散は、
+`\[
+var[x] = E[x^2] - E[x]^2 = \sigma^2
+\]`
+となります  
+
+D次元のベクトルの連続変数`$\mathbf{x}$`に対して定義されるガウス分布は、
+`\[
+\mathcal{N}(\mathbf{x}|\mathbf{\mu},\mathbf{\Sigma}) = \frac{1}{(2\pi)^{\frac{D}{2}}} \frac{1}{|\Sigma|^{\frac{1}{2}}} \exp \{-\frac{1}{2}(\mathbf{x}-\mathbf{\mu})^T \mathbf{\Sigma}^{-1}(\mathbf{x}-\mathbf{\mu})\}
+\]`
+で与えられ、`$\mu (\in \mathbb{R}^D)$`は平均`$\mathbf{\Sigma} (\in \mathbb{R}^{D \times D})$`は共分散と呼ばれ、`$|\mathbf{\Sigma}|$`は`$\mathbf{\mathbf{\Sigma}}$`の行列式を表します。
+            </textarea>
+            </section>
+            <section data-markdown>
+                <textarea data-template>
+## 参考
+#### ガウス分布の期待値の計算
+`\[\begin{aligned}
+E[x] &amp; = \int_{-\infty}^{\infty}\mathcal{N}(x|\mu,\sigma^2)x dx \\
+&amp; = \int_{-\infty}^{\infty}\mathcal{N}(x|\mu,\sigma^2)(x-\mu +\mu) dx \\
+&amp; =  \int_{-\infty}^{\infty} \frac{x-\mu}{\sigma}\frac{1}{\sqrt{2\pi}}\exp[-\frac{1}{2}(\frac{x-\mu}{\sigma})^2]\sigma \frac{dx}{\sigma} + \mu\int_{-\infty}^{\infty}\mathcal{N}(x|\mu,\sigma^2) dx
+\end{aligned}\]`
+ここで`$y=\frac{x-\mu}{\sigma}$`として置換積分を行うと、`$\frac{dy}{dx}=\frac{1}{\sigma}$`なので
+`\[\begin{aligned}
+E[X] &amp; = \int_{-\infty}^{\infty}y\frac{1}{\sqrt{2\pi}}\exp[-\frac{1}{2}y^2]\sigma dy + \mu\\
+&amp; = \int_{-\infty}^{\infty}-\frac{\sigma}{\sqrt{2\pi}}(-\frac{1}{2}y^2)^\prime \exp^{-\frac{1}{2}y^2} dy + \mu \\
+&amp; = [-\frac{\sigma}{\sqrt{2\pi}}\exp^{-\frac{1}{2}y^2}]_{-\infty}^{\infty} + \mu \\
+&amp; = \mu
+\end{aligned}\]`
+            </textarea>
+            </section>
+            <section data-markdown>
+                <textarea data-template>
+## 1.2.4 ガウス分布
+#### ガウス分布での最尤推定
+平均`$\mu$`と分散`$\sigma$`がわからないガウス分布から生成されたデータ集合`$\mathbf{X}$`から、  
+未知のガウス分布の平均`$\mu$`と分散`$\sigma^2$`の最尤推定を行うことを考えます。  
+今回のようにデータが同一の分布から独立に生成される時（たとえば時系列データは独立ではない）、  
+データは**独立同分布(independent identically distributed)**であるといい、i.i.d.と略されます。  
+`$\mu$`と`$\sigma^2$`が与えられ時の尤度関数は、
+`\[
+p(\mathbf{X}|\mu,\sigma^2) = \prod_{n=1}^{N}\mathcal{N}(x_n|\mu,\sigma^2)
+\]`
+と書けます。  
+この尤度関数の最大化を行うことで、`$\mu$`と`$\sigma^2$`を求めることもできますが、実際には尤度関数の対数(対数尤度)を最大化する方が便利です。  
+対数を取ることで、尤度関数に出てくる積を和に変換でき、そのほうが数学的な解析が用意であり、かつ[アンダーフロー](http://nineties.github.io/math-seminar/2.html#/17)を抑制することができるからです。  
+尤度関数の対数を取った対数尤度関数は、
+`\[\begin{aligned}
+\ln p(\mathbf{X}|\mu,\sigma^2) &amp;=\ln[\prod_{n=1}^{N} \frac{1}{(2\pi\sigma^2)^\frac{1}{2}}\exp\{-\frac{1}{2\sigma^2}(x_n - \mu)^2\}]\\
+&amp; = -\frac{1}{2\sigma^2}\sum_{n=1}^{N}(x_n-\mu)^2 - \frac{N}{2}\ln\sigma^2 - \frac{N}{2}\ln 2\pi
+\end{aligned}\]`
+となり（対数関数の線形性を用いて変形した）、
+この対数尤度を`$/mu$`と`$\sigma$`についてそれぞれ偏微分すれば、
+まず、
+`\[
+\mu_{ML} = \frac{1}{N}\sum_{n=1}^{N}x_n
+\]`
+となることがわかり、この`$\mu_{ML}$`を用いて
+`\[
+\sigma_{ML} = \frac{1}{N}\sum_{n=1}^{N}(x_n - \mu_{ML})^2
+\]`
+と計算できます。
+
+            </textarea>
+            </section>
+            <section data-markdown>
+                <textarea data-template>
+## 1.2.4 ガウス分布
+#### 最尤推定の限界
+さきほど最尤推定を行って、ガウス分布の平均`$\mu_{ML}$`と分散`$\sigma_{ML}$`を求めました。  
+さきほどの最尤推定では、データの生成が何かしらのガウス分布に従うことを仮定してその平均と分散を求めましたが、  
+データ`$x_n$`が具体的に、平均`$\mu$`と分散`$\sigma^2$`のガウス分布に従うとすると、
+`\[\begin{aligned}
+E[\mu_{ML}] &amp; = E[\frac{1}{N}\sum_{n=1}^N x_n] \\
+&amp; = \frac{1}{N}\sum E[x_n] \\
+&amp; = \mu
+\end{aligned}\]`
+`\[\begin{aligned}
+E[\sigma_{ML}] &amp; = E[\frac{1}{N}\sum_{n=1}^N (x_n - \mu_{ML})^2] \\
+&amp; = (\frac{N-1}{N})\sigma^2
+\end{aligned}\]`
+(`$E[\sigma_{ML}]$`の導出は省略した)  
+となり、平均については最尤推定により正しく推定できていますが、分散は`$\frac{N-1}{N}$`倍だけ過小評価されてしまっています。  
+`$\frac{N-1}{N}$`は`$N \rightarrow \infty$`のときは問題になりませんが、`$N$`が小さい時には問題になります。  
+これは**バイアス(bias)**と呼ばれる現象の例であり、多項式フィッティングにおける過学習の問題と関連しています。
+
+直感的には、最尤推定においては`$(-\infty, \infty)$`の値域の中から、尤度関数（対数尤度関数）を最大にする1点を探索してしまうため、  
+与えられたデータに対して過度に適合してしまうと考えられます。
+
+            </textarea>
+            </section>
+            <section>
+                <h3>1.2.5 曲線フィッティング再訪</h3>
+                <p>1.1で扱った曲線フィッティングの例について、ベイズ的視点を導入する準備が整ったので、ベイズの視点を導入していきます。</p>
+                <p>まずは、目標変数tがガウス分布に従うとし、そのガウス分布の平均は1.1で考えた$y(x,\mathbf{w})$分散は$\beta^{-1}$($\beta$は精度パラメーター)に従うものとします。</p>
+                <p class="graph-title" style="">$x$が与えられた下での目標変数tの分布のイメージ</p>
+                <div class="r-stack">
+                    <img alt="" src="../imgs/figure_1.6.png" width="40%" />
+                </div>
+                <p>つまり、尤度関数は</p>
+                \[
+                p(t|x,\mathbf{w},\beta) = \mathcal{N}(t|y(x, \mathbf{w}), \beta^{-1})
+                \]
+                <p>
+                    であらわされるものとする。<br>
+                    これで訓練データ$\{\mathbf{X},\mathbf{t}\}$を使って未知のパラメーター$\mathbf{w},\beta$を最尤推定で求めることができます。<br>
+                    ここでもデータは独立同分布(同じ分布から互いに独立に生成される)であることを仮定すると、尤度関数は
+                </p>
+                \[
+                p(\mathbf{t}|\mathbf{X},\mathbf{w},\beta) = \prod_{n=1}^{N}\mathcal{N}(t_n|y(x_n, \mathbf{w}), \beta^{-1})
+                \]
+                <p>であるから、ガウス分布で最尤推定を行った時と同様に、両辺の対数をとった対数尤度関数を考えると</p>
+                \[
+                \ln p(\mathbf{t}|\mathbf{X},\mathbf{w},\beta) = -\frac{\beta}{2}\sum_{n=1}^{N}\{y(x_n,\mathbf{w})-t_n\}^2+\frac{N}{2}\ln\beta -\frac{N}{2}\ln (2\pi)
+                \]
+                <p>
+                    の最小化を考えることになる。
+                </p>
+            </section>
+            <section>
+                <h3>1.2.5 曲線フィッティング再訪</h3>
+                \[
+                \ln p(\mathbf{t}|\mathbf{X},\mathbf{w},\beta) = -\frac{\beta}{2}\sum_{n=1}^{N}\{y(x_n,\mathbf{w})-t_n\}^2+\frac{N}{2}\ln\beta -\frac{N}{2}\ln (2\pi)
+                \]
+                <p>
+                    の最小化において、右辺の2項は$\beta$には依存しないので、この対数尤度を最大にする$\mathbf{w}_{ML}$は
+                </p>
+                \[
+                \sum_{n=1}^{N}\{y(x_n,\mathbf{w})-t_n\}^2
+                \]
+                <p>を最小化するときに得られる。これは1.1の多項式フィッティングの時に誤差関数として使用した二乗和誤差(sum-of-squares error)と等価です（定数係数の違いがあるのみ）</p>
+                <p>
+                    つまり二乗和誤差は目標変数$t$のノイズがガウス分布に従うと仮定した時の尤度の最大化とみなすことができます。<br>
+                    直感的に「目標値と推論値の距離のずれ」として導入した二乗和誤差ですが、ベイズ的してを用いることで自然に導入することができました。
+                </p>
+                <p>尤度を最大化する$\beta_{ML}$についても、ガウス分布の推定の時と全く同様に、対数尤度関数を$\beta$で微分した式を0とおいて、$\beta$について解くことで</p>
+                \[
+                \frac{1}{\beta_{ML}} = \frac{1}{N}\sum_{n=1}^{N}\{y(x_n,\mathbf{w}_{ML})-t_n\}^2
+                \]
+                <p>と計算できます</p>
+            </section>
+            <section>
+                <h3>1.2.5 曲線フィッティング再訪</h3>
+                <p>
+                    直近の2ページでは予測変数に対して分布（ここではガウス分布を仮定した）を導入したが、今度はさらに多項式の係数$\mathbf{w}$について事前分布を導入します。<br>
+                    簡単のため、ガウス分布を事前分布とし、$\mathbf{w}$のどの要素についても平均は0、分散は$\alpha^{-1}$とすると
+                </p>
+                \[
+                p(\mathbf{w}|\mathbf{0}, \alpha^{-1}\mathbf{I}) = (\frac{\alpha}{2\pi})^\frac{M+1}{2}\exp\{-\frac{\alpha}{2}\mathbf{w}^T\mathbf{w}\}
+                \]
+                <p>
+                    とあらわされます。（MはM次の多項式におけベクトル$\mathbf{w}$の要素数）<br>
+                    ここで用いた$\alpha$のような、モデルパラメーターの分布を制御するパラメーターを<strong>超パラメーター(hyperparameter)と呼びます。</strong>
+                </p>
+                <p>
+                    $\mathbf{w}$の事後分布$p(\mathbf{w}|\mathbf{x},\mathbf{t},\alpha,\beta)$はベイズの定理から
+                </p>
+                \[
+                p(\mathbf{w}|\mathbf{x},\mathbf{t},\alpha,\beta) \propto p(\mathbf{t}| \mathbf{w}, \mathbf{x},\beta)p(\mathbf{w}|\alpha)
+                \]
+                <p>
+                    とあらわされます。<br>
+                    この事後分布が最も確からしい(大きい)値を取る$\mathbf{w}$を見つけたいので、この式の最大化を考えます。<br>
+                    ここでも両辺の対数をとったものの最大化を考えると、
+                </p>
+                \[
+                \ln p(\mathbf{w}|\mathbf{x},\mathbf{t},\alpha,\beta) \propto \ln p(\mathbf{t}| \mathbf{w}, \mathbf{x},\beta) + \ln p(\mathbf{w}|\alpha)
+                \]
+                <p>
+                    の最大化を考えることになる。右辺の第1項は目標変数に分布を導入した時の尤度関数と同じです。<br>
+                    右辺の第二項については
+                </p>
+                \[
+                \ln p(\mathbf{w}|\alpha) = -\frac{\alpha}{2}\mathbf{w}^T\mathbf{w} + \frac{M+1}{2}(\frac{\alpha}{2\pi})
+                \]
+                <p>
+                    となり、この第二項は定数なので、第一項のみを考えれば良いことがわかります。<br>
+                    結局事後確率の最大値は
+                </p>
+                \[
+                \frac{\beta}{2}\sum_{n=1}^{N}\{y(x_n,\mathbf{w})-t_n\}^2+\frac{\alpha}{2}\mathbf{w}^T\mathbf{w} \\
+                \]
+                <p>
+                    の最小値を与える$\mathbf{w}$の時に与えられることがわかります。<br>
+                </p>
+            </section>
+            <section>
+                <h3>1.2.5 曲線フィッティング再訪</h3>
+                <p>
+                    モデルのパラメータベクトル$\mathbf{w}$に事前分布を導入し、データが与えられた下でのパラメーターベクトル$\mathbf{w}$の事後分布を最大化するには
+                </p>
+                \[
+                \frac{\beta}{2}\sum_{n=1}^{N}\{y(x_n,\mathbf{w})-t_n\}^2+\frac{\alpha}{2}\mathbf{w}^T\mathbf{w} \\
+                = \frac{1}{2}\sum_{n=1}^{N}\{y(x_n,\mathbf{w})-t_n\}^2+\frac{\alpha}{2\beta}\mathbf{w}^T\mathbf{w}
+                \]
+                <p>
+                    を最小化する$\mathbf{w}$を見つければ良いことがわかりました。
+                    ここで、$\frac{\alpha}{\beta}=\lambda$とすれば、この式は1.1で正則化項を導入したときの誤差関数と一致します。
+                </p>
+                <p>
+                    <span class="underline">1.1で過学習防止のためのテクニックとして導入した正則化項は、パラメーター$\mathbf{w}$に事前分布を導入することで自然に導くことができました。<span>
+                </p>
+                <p>このように知りたいパラメーター(今回は$\mathbf{w}$)の事後確率を最大化するアプローチを、<strong>最大事後確率推定(maximum a posterior)</strong>または<strong>MAP推定</strong>と呼びます。</p>
+            </section>
+
+            <section data-markdown>
+                <textarea data-template>
+                <h3>1.2.6 ベイズ曲線フィッティング</h3>
+                <p>
+                    1.2.5の曲線フィッティング再訪では、目標変数$t$に分布を導入し、パラメーター$\mathbf{w}$に事前分布を導入しましたが、<br>
+                    パラメーター$\mathbf{w}$は1つの値として点推定していました。<br>
+                    完全なベイズ的アプローチでは、確率の加法・乗法定理を適用してすべての$\mathbf{w}$の値について積分を行うことで、目標変数$t$の予測を行います。
+                </p>
+                <p>
+                    このアプローチでは、データが与えられた下での目標変数$t$の事後分布を、パラメーター$\mathbf{w}$について周辺化(積分)することで求めます。<br>
+                    ここでは目標変数$t$の分散$\beta^{-1}$や、パラメーター$\mathbf{w}$の分散$\alpha^{-1}$は既知の定数だとします。(後の章でこれらのパラメーターについても事前分布を導入し、その値をデータから推論するアプローチが議論されます)
+                </p>
+                <p>
+                    結局目標変数$t$の分布は訓練データ$\{\mathbf{X},\mathbf{t}\}$を用いて、
+                </p>
+                \[
+p(t|x,\mathbf{X},\mathbf{t}) = \int p(t|x, \mathbf{w}) p(\mathbf{w}| \mathbf{X}, \mathbf{t}) d\mathbf{w}
+                \]
+                <p>と書くことができます。</p>
+                <p>
+                    $t$の事前分布としてガウス分布を採用した場合、この事後分布は解析的に解くことができて<br>
+                    $p(t|x,\mathbf{X},\mathbf{t})$もやはり正規分布になります。
+                </p>
+\[
+p(t|x,\mathbf{X},\mathbf{t}) = \mathcal{N}(t|m(x), s^2(x)) \\
+但し \\
+m(x) = \beta\phi(x)^T\mathbf{S}\sum_{n=1}^{N}\phi(x_n)t_n \\
+s^2(x) = beta^{-1}+\phi(x)^T\mathbf{S}\phi(x) \\
+\mathbf{S}^{-1} = \alpha\mathbf{I} + \beta\sum_{n=1}^{N}\phi(x_n)\phi(x_n)^T
+\]
+                <p>導出の仮定は <a href="https://www.amazon.co.jp/%E6%A9%9F%E6%A2%B0%E5%AD%A6%E7%BF%92%E3%82%B9%E3%82%BF%E3%83%BC%E3%83%88%E3%82%A2%E3%83%83%E3%83%97%E3%82%B7%E3%83%AA%E3%83%BC%E3%82%BA-%E3%83%99%E3%82%A4%E3%82%BA%E6%8E%A8%E8%AB%96%E3%81%AB%E3%82%88%E3%82%8B%E6%A9%9F%E6%A2%B0%E5%AD%A6%E7%BF%92%E5%85%A5%E9%96%80-%EF%BC%AB%EF%BC%B3%E6%83%85%E5%A0%B1%E7%A7%91%E5%AD%A6%E5%B0%82%E9%96%80%E6%9B%B8-%E9%A0%88%E5%B1%B1%E6%95%A6%E5%BF%97-ebook/dp/B07L2V4H59/ref=sr_1_1?__mk_ja_JP=%E3%82%AB%E3%82%BF%E3%82%AB%E3%83%8A&crid=3A0XCUNVIAZ8K&dchild=1&keywords=%E3%83%99%E3%82%A4%E3%82%BA%E6%8E%A8%E8%AB%96%E3%81%AB%E3%82%88%E3%82%8B%E6%A9%9F%E6%A2%B0%E5%AD%A6%E7%BF%92%E5%85%A5%E9%96%80&qid=1592234703&sprefix=%E3%83%99%E3%82%A4%E3%82%BA%E6%8E%A8%E8%AB%96%E3%81%AB%2Caps%2C252&sr=8-1">ベイズ推論による機械学習入門</a>のp107-108に解説がありました。</p>
+                <p>今回は解析的に事後分布を計算できる例を見ましたが、実際には解析的に事後分布を計算できない場合も多く、そういった場合に事後分布を「知る」ための手法としてはサンプリング(sampleing)と呼ばれる手法があり、MCMC(Markov chain Monte Carlo)と呼ばれる手法群が広く使われます。11章で詳しく説明されます。</p>
+            </textarea>
+            </section>
+            <section>
+                <h3>1.3 モデル選択</h3>
+                <p>
+                    モデルの複雑さの選択や、モデルのパラメータの学習を適切に行うには、データの訓練用集合とは別に、モデルの複雑さの比較のための確認用集合(検証用集合:validation set)や、確認要集合への過学習を抑制するために、テスト集合(test set)とデータを分割する必要があります。
+                </p>
+                <p>
+                    一方で限られたデータの中から学習を適切に行うためには、できるだけ多くを訓練用に用いることが必要です。<br>
+                    このジレンマを解くたにいくつかの方法があります。
+                </p>
+                <h4>交差確認</h4>
+                <p>得られたデータのうち$\frac{S-1}{S}$の部分を学習に使用し、残りの$\frac{1}{S}$を評価に使用するという処理をS回繰り返すことで、全データを訓練と評価に使用します。</p>
+                <div class="r-stack">
+                    <img alt="" src="../imgs/figure_1.18.png" width="40%" />
+                </div>
+                <h4>LOO法 (leave-one-out法)</h4>
+                <p>
+                    交差確認の極端なパターンで、$S=1$を訓練データとして、残りの1データを評価に使用するという処理をデータ数と同じ回数繰り返します。<br>
+                    必然的に訓練回数は交差検証の場合よりも増加します。
+                </p>
+
+                <p></p>
+            </section>
+            <section>
+                <h3>1.3 モデル選択</h3>
+                <p>
+                    モデルを適切に選択するには、データの扱いとは別に、直接的にモデルの性能を図る尺度が必要です。<br>
+                    歴史的に様々な情報基準量(information criterion)と呼ばれるものが提案されてきましたが、いくつか代表的なものがあります。
+                </p>
+                <h4>AIC (赤池情報量基準: Akaike information criterion)</h4>
+                \[
+                AIC = \ln p(\mathcal{D}|\mathbf{w}_{ML}) - M
+                \]
+                <p>
+                    で与えられる量ができるだけ大きくなるようにモデルを選択します。<br>
+                    $p(\mathcal{D}|\mathbf{w}_{ML})$は最大尤度、$M$はモデルのパラメーター数なので、<br>
+                    できるだけ少ないモデルパラメーターで、大きな尤度を達成することを意味します。<br>
+                </p>
+                <h4>BIC (ベイズ情報量基準: Baysian information criterion)</h4>
+                \[
+                BIC = \ln p(\mathcal{D}|\mathbf{w}_{ML}) - \frac{1}{2}M\ln N
+                \]
+                <p>
+                    で与えられる量ができるだけ大きくなるようにモデルを選択します<br>
+                    通常$\frac{1}{2}\ln N \gt 1$なので、複雑なモデルにより大きなペナルティが課され、データ数が大きくなるほど複雑なモデルが選択されてしまうことを防ぎます。
+                </p>
+                <p>
+                    (どちらの指標についても、直感的には"情報量"は"小さい"方がよいので符号が反転している方がわかりやすいですが、PRMLの定義に従いました)
+                </p>
+            </section>
+            <section data-markdown>
+                <textarea data-template>
+                <h3>1.4 次元の呪い</h3>
+                <p>
+                    これまで例として使用した多項式フィッティングでは、ただ1つの入力変数を考えてきました。<br>
+                    しかし実際のパターン認識の応用では入力が高次元空間にってしまします。
+                </p>
+                <p>
+                    ここでは1.1で考えた多項式フィッティングの入力がD個になった時を考えます。<br>
+                    このとき多項式の3次までの項は
+                </p>
+\[
+y(\mathbf{x},\mathbf{w}) = w_0 + \sum_{i=1}^Dw_ix_i + \sum_{i=1}^{D}\sum_{j=1}^{D}w_{ij}x_ix_j+\sum_{i=1}^{D}\sum_{j=1}^{D}\sum_{k=1}^{D}w_{ijk}x_ix_jx_k
+\]
+                <p>となり、Dが増えると独立な係数は$D^3$に比例して増加します（証明は演習1.14~1.16）。これは指数関数ほどのスピードでの増加ではないものの、やはり扱いは困難です。</p>
+                <p>一般に高次元では私達の直感が誤りやすいです。例えば高次元の球の体積はほとんどの体積は表面に近い部分に集中します。</p>
+                <p>このように大きい次元に伴う困難のことを<strong>次元の呪い(curse of dimensionality)</strong>と呼ぶことがあります。</p>
+                <p>
+                    高次元の扱いは困難ですが、問題が高次元になることを避ける方法もあります。<br>
+                    1つ目は、実データは多くの場合実質的には低い次元に入っているか、少なくとも目標変数な重要な変化を生じさせる方向(次元)は限定されることが多いです。<br>
+                    2つ目は,入力空間上での変化量が小さければ、目標変数の変化も小さく、局所的に内挿を行うといった単純な方法で目標変数の変化を予測できることがあります。
+                </p>
+            </textarea>
+            </section>
+        </div>
+    </div>
+
+    <script src="dist/reveal.js"></script>
+    <script src="plugin/notes/notes.js"></script>
+    <script src="plugin/markdown/markdown.js"></script>
+    <script src="plugin/highlight/highlight.js"></script>
+    <script src="plugin/math/math.js"></script>
+    <script>
+        // More info about initialization & config:
+        // - https://revealjs.com/initialization/
+        // - https://revealjs.com/config/
+        Reveal.initialize({
+            hash: true,
+
+            // Learn about plugins: https://revealjs.com/plugins/
+            plugins: [RevealMarkdown, RevealHighlight, RevealNotes, RevealMath]
+        });
+    </script>
+</body>
+
 </html>
